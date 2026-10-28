@@ -1,0 +1,1388 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jamaica Versions</title>
+<style>
+  :root{
+    color-scheme: light;
+    --bg:#fdf1dd;
+    --panel:#fff8ec;
+    --line:#e3cba6;
+    --txt:#4a3726;
+    --dim:#977f63;
+    --red:#e2574c;
+    --green:#36a86b;
+    --yellow:#f0a93c;
+    --mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", Consolas, "Courier New", monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--txt);
+    font-family:var(--mono);
+    display:flex; align-items:center; justify-content:center;
+    padding:16px; overflow:hidden;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:none; overscroll-behavior:none;
+    -webkit-user-select:none; user-select:none;
+  }
+  #app{
+    position:relative;
+    width:min(100%, calc((100vh - 32px) * 16 / 9));
+    max-width:1100px; aspect-ratio:16/9;
+    border:1px solid var(--line); border-radius:6px; overflow:hidden;
+    box-shadow:0 14px 40px rgba(120,80,30,.18);
+    background:#fdf1dd; touch-action:none;
+  }
+  /* celular deitado: tela cheia, sem moldura */
+  @media (max-height:540px){
+    body{padding:0}
+    #app{width:100vw; height:100vh; height:100dvh; max-width:none; aspect-ratio:auto; border:0; border-radius:0}
+  }
+  canvas{display:block; width:100%; height:100%; object-fit:contain; image-rendering:pixelated}
+
+  /* ---------- HUD ---------- */
+  #hud{
+    position:absolute; inset:0 0 auto 0; padding:10px 14px;
+    display:flex; align-items:center; gap:14px;
+    font-size:11px; letter-spacing:.14em; pointer-events:none;
+    background:linear-gradient(#fff8ecee, #fff8ec00);
+  }
+  #esq{display:flex; flex-direction:column; gap:4px; min-width:92px}
+  #hearts{display:flex; gap:4px}
+  #baseados{display:flex; gap:3px; font-size:12px; line-height:1}
+  #baseados span{filter:grayscale(1); opacity:.35}
+  #baseados .on{filter:none; opacity:1}
+  .heart{width:15px;height:14px;display:block;color:var(--red);filter:drop-shadow(0 1px 1px #00000022)}
+  .heart.off{color:#d9c4a6;opacity:.75;filter:none}
+  #progwrap{flex:1; display:flex; flex-direction:column; gap:5px; align-items:center}
+  #proglabels{display:flex; justify-content:space-between; width:100%; font-size:9px; color:#8a7054}
+  #progbar{width:100%; height:3px; background:#00000018; position:relative}
+  #progfill{position:absolute; inset:0 auto 0 0; width:0%; background:var(--yellow)}
+  #progdot{position:absolute; top:-3px; width:9px; height:9px; background:var(--yellow); left:0; transform:translateX(-50%); box-shadow:0 1px 3px #0003}
+  #stats{min-width:92px; text-align:right; font-size:11px}
+  #stats b{color:#2f2217; font-weight:600}
+  #stats small{display:block; color:#8a7054; font-size:9px; letter-spacing:.1em}
+
+  /* ---------- telas ---------- */
+  .screen{
+    position:absolute; inset:0; display:none; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    gap:14px; padding:24px; background:rgba(255,248,236,.96); backdrop-filter:blur(3px);
+    animation:fade .25s ease;
+  }
+  .screen.on{display:flex}
+  .screen{overflow:auto}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .eyebrow{color:#1c7a3a; font-size:10px; letter-spacing:.42em}
+  .eyebrow .pt{color:#1c9e4a; font-style:normal; font-size:13px; margin-right:2px}
+  h1{margin:0; font-size:clamp(22px,4.4vw,40px); font-weight:500; letter-spacing:.08em; color:#2a1d12}
+  h1 small{display:block; font-size:12px; letter-spacing:.3em; color:var(--dim); margin-top:10px}
+  .lead{max-width:430px; margin:0; color:#6f5b45; font-size:12px; line-height:1.75}
+  .legenda{display:flex; flex-direction:column; gap:7px; font-size:10px; color:var(--dim)}
+  .grupo{display:flex; flex-wrap:wrap; gap:6px 12px; align-items:center; justify-content:center}
+  .rot{font-size:9px; letter-spacing:.2em; padding:3px 7px; border:1px solid}
+  .rot.mau{color:var(--red); border-color:#5a2730}
+  .rot.bom{color:var(--green); border-color:#235c40}
+  .it{display:flex; align-items:center; gap:6px}
+  .it i{display:flex; align-items:flex-end; height:26px}
+  .it canvas{display:block; image-rendering:pixelated}
+  .pts{font-size:9px; letter-spacing:.1em}
+  .pts.mau{color:#a3626a}
+  b.bom{color:var(--green); font-weight:400}
+  .keys{font-size:10px; color:#9c8468; letter-spacing:.16em}
+  .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:center}
+  .lbl{font-size:10px; color:#9c8468; letter-spacing:.2em; margin-right:4px}
+  button{
+    font-family:var(--mono); font-size:11px; letter-spacing:.22em; color:var(--txt);
+    background:transparent; border:1px solid var(--line); padding:9px 16px;
+    cursor:pointer; transition:.15s;
+  }
+  button{background:#fffaf0}
+  button:hover{border-color:#c9a271; color:#2f2217}
+  button.sel{border-color:var(--yellow); color:#b96d12; background:#ffeccd}
+  button.primary{
+    border-color:#1c9e4a; background:#ffe27a; color:#14532d; padding:13px 34px; margin-top:4px;
+  }
+  button.primary:hover{background:#ffd84d; border-color:#157a3a; color:#0d3b20}
+  .score{display:flex; gap:34px; justify-content:center; margin:2px 0}
+  .score div{font-size:10px; color:var(--dim); letter-spacing:.16em}
+  .score b{display:block; font-size:26px; color:#2f2217; font-weight:400; letter-spacing:.04em; margin-top:6px}
+  .foot{font-size:9px; color:#b49a7c; letter-spacing:.2em}
+
+  /* ---------- controles touch ---------- */
+  #touch{position:absolute; inset:0; display:none}
+  #touch .tz{position:absolute; left:0; right:0; height:50%; display:flex; align-items:center; justify-content:center}
+  #touch .tz.up{top:0} #touch .tz.dn{bottom:0}
+  #touch .tz span{font-size:26px; color:#00000012}
+  #touch.on{display:block}
+  @media (max-width:620px){
+    #hud{font-size:9px; gap:8px; padding:8px 10px}
+    #hearts,#stats{min-width:62px}
+    .lead{font-size:11px}
+  }
+  /* pouca altura (celular deitado): tudo mais compacto */
+  @media (max-height:480px){
+    #hud{padding:6px 10px; font-size:9px}
+    .heart{width:12px;height:11px}
+    .screen{gap:7px; padding:10px}
+    h1{font-size:clamp(17px,4.6vw,26px)}
+    h1 small{font-size:9px; margin-top:5px}
+    .lead{font-size:10px; line-height:1.5; max-width:400px}
+    .legend{font-size:9px; gap:2px 10px}
+    .keys{font-size:9px}
+    .eyebrow{font-size:9px}
+    button{padding:7px 12px}
+    button.primary{padding:10px 22px; margin-top:0}
+    .score{gap:22px} .score b{font-size:20px}
+  }
+  /* celular em pé: pede para girar */
+  #gira{
+    position:fixed; inset:0; z-index:60; display:none;
+    flex-direction:column; align-items:center; justify-content:center; gap:18px;
+    background:var(--bg); text-align:center; padding:24px;
+  }
+  #gira .ico{font-size:52px; color:#e08b3a; animation:gira 2.2s ease-in-out infinite}
+  @keyframes gira{0%,45%{transform:rotate(0)}55%,100%{transform:rotate(-90deg)}}
+  #gira p{margin:0; font-size:13px; letter-spacing:.2em}
+  #gira small{display:block; margin-top:10px; font-size:10px; color:var(--dim); letter-spacing:.14em}
+  body.retrato #gira{display:flex}
+  body.retrato.gira-ok #gira{display:none}
+  #gira button{margin-top:4px}
+</style>
+</head>
+<body>
+<div id="gira">
+  <div class="ico">⟳</div>
+  <p>VIRE O CELULAR<small>o rolê é na horizontal</small></p>
+  <button id="btn-gira">JOGAR ASSIM MESMO</button>
+</div>
+
+<div id="app">
+  <canvas id="game" width="960" height="540"></canvas>
+
+  <div id="hud">
+    <div id="esq">
+      <div id="hearts"></div>
+      <div id="baseados"><span>🌿</span><span>🌿</span><span>🌿</span></div>
+    </div>
+    <div id="progwrap">
+      <div id="proglabels"><span>ORLA</span><span id="progmid">BAILE</span></div>
+      <div id="progbar"><div id="progfill"></div><div id="progdot"></div></div>
+    </div>
+    <div id="stats"><b id="pts">0</b><small>PONTOS</small></div>
+  </div>
+
+  <div id="touch"><div class="tz up"><span>▲</span></div><div class="tz dn"><span>▼</span></div></div>
+
+  <!-- INÍCIO -->
+  <div class="screen on" id="scr-start">
+    <div class="eyebrow"><i class="pt">✦</i> ISEO &amp; DODOSOUND</div>
+    <h1>O som precisa passar<small>JAMAICA VERSIONS</small></h1>
+    <p class="lead">Iseo e Dodosound atravessam a orla com o sound system pra tocar no baile. Só que a polícia tá na área e o enquadro vem de todo lado.</p>
+    <div class="legenda">
+      <div class="grupo">
+        <span class="rot mau">DESVIA</span>
+        <span class="it"><i data-sp="policial"></i>policial</span>
+        <span class="it"><i data-sp="viatura"></i>viatura</span>
+        <span class="it"><i data-sp="moto"></i>moto da polícia</span>
+        <span class="it"><i><img src="gabriel.png" alt="" height="26" onerror="this.closest('.it').remove()"></i>Gabriel Vagalume</span>
+        <span class="pts mau">cada um tira 1 vida</span>
+      </div>
+      <div class="grupo">
+        <span class="rot bom">PEGA</span>
+        <span class="it"><i data-sp="bud"></i>bud <b class="bom">+50 pontos</b></span>
+        <span class="it"><i data-sp="budroxo"></i>bud roxo <b class="bom">+1 vida</b></span>
+        <span class="it"><i data-sp="baseado"></i>baseado <b class="bom">3 chamam a DILJAMAICA</b></span>
+      </div>
+    </div>
+    <div class="keys">toque e arraste para mover • ou ↑ ↓ / W S • → corre • ← segura • P pausa • M silencia</div>
+    <div class="row">
+      <span class="lbl">DIFICULDADE</span>
+      <button data-dif="facil">FÁCIL</button>
+      <button data-dif="normal" class="sel">NORMAL</button>
+      <button data-dif="dificil">DIFÍCIL</button>
+    </div>
+    <button class="primary" id="btn-start">COMEÇAR O ROLÊ</button>
+    <div class="foot" id="best-start"></div>
+  </div>
+
+  <!-- FIM -->
+  <div class="screen" id="scr-end">
+    <div class="eyebrow" id="end-eyebrow">FIM DE JOGO</div>
+    <h1 id="end-title">Deu PT</h1>
+    <p class="lead" id="end-sub"></p>
+    <div class="score">
+      <div>PONTOS<b id="end-pts">0</b></div>
+      <div>METROS<b id="end-m">0</b></div>
+      <div>RECORDE<b id="end-best">0</b></div>
+    </div>
+    <button class="primary" id="btn-again">TENTAR DE NOVO</button>
+    <button id="btn-menu">MUDAR DIFICULDADE</button>
+  </div>
+
+  <!-- PAUSA -->
+  <div class="screen" id="scr-pause">
+    <div class="eyebrow">BATEU A LARICA</div>
+    <h1>Pausado</h1>
+    <button class="primary" id="btn-resume">VOLTAR</button>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ====================================================================
+   1. CONSTANTES / GEOMETRIA
+   ==================================================================== */
+let W = 960;              // largura lógica (acompanha o formato da tela)
+let ESC = 1;              // escala de velocidade em relação ao desenho base
+const H = 540;
+const ROAD_TOP = 168, ROAD_BOT = 500;
+const LANES = 4;
+const LANE_H = (ROAD_BOT - ROAD_TOP) / LANES;
+const laneY = i => ROAD_TOP + LANE_H * (i + 0.5);
+let PLAYER_X = 170;
+
+const DIF = {
+  facil:   { speed:195, ramp:16, spawn:1.30, dens:0.36, lives:5, meta:900,  label:"FÁCIL"   },
+  normal:  { speed:235, ramp:24, spawn:1.05, dens:0.48, lives:3, meta:1200, label:"NORMAL"  },
+  dificil: { speed:285, ramp:34, spawn:0.80, dens:0.66, lives:2, meta:1600, label:"DIFÍCIL" },
+};
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+ctx.imageSmoothingEnabled = false;
+
+// o canvas acompanha o formato do container: a altura lógica é fixa (540) e a
+// largura segue a proporção da tela, então nada estica no celular deitado
+const app = document.getElementById("app");
+function fitCanvas(){
+  const r = app.getBoundingClientRect();
+  const prop = r.height > 0 ? r.width / r.height : 16/9;
+  W = Math.round(Math.max(620, Math.min(1500, H * prop)));
+  PLAYER_X = Math.round(W * 0.175);
+  ESC = W / 960;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+}
+fitCanvas();
+addEventListener("resize", fitCanvas);
+addEventListener("orientationchange", () => setTimeout(fitCanvas, 120));
+
+/* ====================================================================
+   2. PIXEL ART  (cada sprite é uma matriz de caracteres + paleta)
+   ==================================================================== */
+function sprite(rows, pal){ return { rows, pal, w: rows[0].length, h: rows.length }; }
+
+function draw(sp, x, y, px, alpha, cx){
+  const c2 = cx || ctx;
+  if (alpha !== undefined) c2.globalAlpha = alpha;
+  for (let r = 0; r < sp.rows.length; r++){
+    const row = sp.rows[r];
+    for (let c = 0; c < row.length; c++){
+      const ch = row[c];
+      if (ch === ".") continue;
+      c2.fillStyle = sp.pal[ch];
+      c2.fillRect(Math.round(x + c*px), Math.round(y + r*px), px, px);
+    }
+  }
+  if (alpha !== undefined) c2.globalAlpha = 1;
+}
+
+/* a dupla lado a lado: a Iseo na frente, à esquerda, e o Dodosound à direita */
+const PAL_P = { g:"#3b3d42", w:"#e8e8e8", s:"#f0c7a6", e:"#2a2320", m:"#5a3a24",
+                b:"#2f5fd0", o:"#f07a1e", y:"#c8e83a", r:"#7a2030", p:"#2b2f3a", c:"#1c1c1c",
+                h:"#141214", a:"#e8c75a", l:"#d8402a", d:"#8fb6e6", D:"#24324f", q:"#6f93c4", t:"#3a3a40" };
+// Dodosound: boné cinza com o alien, bigode e camiseta tie-dye
+const DODO_CIMA = [
+  "...ggggg...",
+  "..gggwggg..",
+  "..ggggggggg",
+  "..ssssss...",
+  "..sesses...",
+  "..smmmms...",
+  "...ssss....",
+  ".boyybboo..",
+  "obbyoorbyo.",
+  "yobrybbooy.",
+  "s.oobyyb.s.",
+  "..ooybbo...",
+  "..pppppp...",
+];
+const DODO_PE_A = ["..pp..pp...", "..pp..pp...", ".ccc..ccc.."];
+const DODO_PE_B = [".pp....pp..", ".pp....pp..", "ccc....ccc."];
+// Iseo: duas xuxinhas de samurai, franjinha, argola, batom e vestido azul de bolinha
+const ISEO_CIMA = [
+  "..hh...hh..",
+  "..hh...hh..",
+  "..hhhhhhh..",
+  "..hhhhhhh..",
+  "..sessses..",
+  ".asssssssa.",
+  "..sslllss..",
+  "....ddd....",
+  "..sdDdDds..",
+  "..tdddDds..",
+  "..sDdddds..",
+  "...qqqqq...",
+  "..dDddDdd..",
+  ".ddDdddDdd.",
+];
+const ISEO_PE_A = ["...s...s...", "..cc...cc.."];
+const ISEO_PE_B = ["..s.....s..", ".cc.....cc."];
+const juntos = (a, b) => a.map((l, i) => l + "." + b[i]);
+const PLAYER_A = sprite(juntos(ISEO_CIMA.concat(ISEO_PE_A), DODO_CIMA.concat(DODO_PE_A)), PAL_P);
+const PLAYER_B = sprite(juntos(ISEO_CIMA.concat(ISEO_PE_B), DODO_CIMA.concat(DODO_PE_B)), PAL_P);
+
+/* policial a pé, de farda e quepe */
+const POLICIAL = sprite([
+  "...kkkkkk...",
+  "..kkkykkkk..",
+  "..vvvvvvvv..",
+  "...ssssss...",
+  "...sesses...",
+  "...ssmmss...",
+  "....ssss....",
+  "..uuuuuuuu..",
+  ".uuuyuuuuuu.",
+  ".uuuuuuuuuu.",
+  ".suukkkkuus.",
+  "..uuuuuuuu..",
+  "..uuu..uuu..",
+  "..uuu..uuu..",
+  "..kkk..kkk..",
+  ".kkkk..kkkk.",
+], { k:"#14161c", y:"#f2c94c", v:"#0b0c10", s:"#d9a37f", e:"#1a1a1a", m:"#4a2e1c", u:"#3d5a80" });
+
+/* viatura branca com faixa azul, sirene e POLÍCIA escrito na porta */
+const VIATURA = sprite([
+  "........rrbb..........",
+  "......oooooooooo......",
+  ".....owgggwwgggwo.....",
+  "....owgggwwwwgggwo....",
+  ".ooowwwwwwwwwwwwwwooo.",
+  "owwwwwwwwwwwwwwwwwwwwo",
+  "obbbbbbbbbbbbbbbbbbbbo",
+  "owwwwwwwwwwwwwwwwwwwwo",
+  "owwkkkwwwwwwwwwwkkkwwo",
+  ".ookkkkooooooookkkkoo.",
+  "...kkkk........kkkk...",
+  "....kk..........kk....",
+], { r:"#e23b3b", b:"#2b5fd9", o:"#0d0e12", w:"#f2f4f7", g:"#6c8fb0", k:"#1a1b20" });
+
+/* moto da polícia: vem rápido e troca de raia sozinha */
+const MOTO = sprite([
+  "......kkkk......",
+  ".....kkvvkk.....",
+  ".....kssssk.....",
+  "......uuuu......",
+  ".....uuuuuu..rb.",
+  "....uuuuuuuu.oo.",
+  "..ooowwwwwwwoo..",
+  ".owwbbbbbbbwwwo.",
+  "okkkoooooookkko.",
+  "kkwkk.....kkwkk.",
+  "kkkkk.....kkkkk.",
+  ".kkk.......kkk..",
+], { k:"#14161c", v:"#3a4a5a", s:"#d9a37f", u:"#3d5a80", r:"#e23b3b", b:"#2b5fd9", o:"#0d0e12", w:"#f2f4f7" });
+
+/* bud: o verdinho vale ponto, o roxo devolve uma vida */
+const BUD_ROWS = [
+  "....gg....",
+  "...gGGg...",
+  "..gGoGGg..",
+  ".gGGGGoGg.",
+  ".gGoGGGGg.",
+  "gGGGGoGGGg",
+  ".gGGGGGGg.",
+  "..gGoGGg..",
+  "...gGGg...",
+  "....kk....",
+];
+const BUD = sprite(BUD_ROWS, { g:"#2e6b2a", G:"#6cc04a", o:"#f0902c", k:"#7a5a2a" });
+const BUD_ROXO = sprite(BUD_ROWS, { g:"#4a2470", G:"#9a62d6", o:"#f0902c", k:"#7a5a2a" });
+
+/* baseado aceso: 3 deles chamam a DILJAMAICA */
+const BASEADO = sprite([
+  "...........s....",
+  "......oooooooo..",
+  "oooooowwwwwwwro.",
+  "okkwwwwwwwwwwrro",
+  "okkwwwwwwwwwwrro",
+  "oooooowwwwwwwro.",
+  "......oooooooo..",
+], { o:"#5c4a32", k:"#d4ad6e", w:"#fbf7ee", r:"#ff6a2a", s:"#b8c0c6" });
+
+/* fumacinha que sobe da dupla */
+const FUMACA = sprite([
+  ".sss...",
+  "sSSSs..",
+  "sSSSSss",
+  ".sSSSSs",
+  "..ssss.",
+], { s:"#a9b2b8", S:"#eef2f4" });
+
+/* a DILJAMAICA aparece quando junta 3 baseados e segura a polícia: gorro e vestido nas cores da Jamaica */
+const DILJAMAICA = sprite([
+  ".....oooooooo.....",
+  "ooo.oGGGGGGGGo.ooo",
+  "oso.oYYYYYYYYo.oso",
+  "oso.ohhsssshho.oso",
+  "oso.ohsessesho.oso",
+  "oso.ohssmmssho.oso",
+  ".ossohhsssshhosso.",
+  ".oss.oh.ss.ho.sso.",
+  ".ossorrrrrrrrosso.",
+  "..o.orygrrrrro.o..",
+  "....orrygrrrro....",
+  "....orrrygrrro....",
+  "....orrrrygrro....",
+  "....orrrrrygro....",
+  ".....orrrrrro.....",
+  ".....oll..llo.....",
+  ".....oll..llo.....",
+  ".....occ..cco.....",
+], { o:"#2f2a2a", h:"#6a4634", s:"#ecc5a4", e:"#2a2320", m:"#a9553f", r:"#1c9e4a", y:"#f5d327", g:"#141414", l:"#ecc5a4", c:"#2f3a4a", G:"#1c9e4a", Y:"#f5d327" });
+
+/* o Gabriel Vagalume é foto de verdade, recortada: só entra no jogo quando o gabriel.png carrega */
+const GABRIEL = new Image();
+let gabrielPronto = false;
+GABRIEL.onload = () => { gabrielPronto = true; };
+GABRIEL.src = "gabriel.png";
+
+/* tipos de obstáculo: sprite (ou foto), escala, velocidade extra em relação ao chão */
+const TIPOS = {
+  policial: { sp:POLICIAL, px:5, extra:-35, zig:false, nome:"um policial",
+              fim:"Tomou enquadro a pé. Revistaram até o case do microfone." },
+  viatura:  { sp:VIATURA,  px:5, extra:  0, zig:false, nome:"uma viatura", sirene:[10, 0.5],
+              fim:"A viatura encostou. Lá se foi o beck e o horário do show.",
+              rot:{ txt:"POLÍCIA", cx:11, cy:7.5, w:16, tam:13, cor:"#14284f" } },
+  moto:     { sp:MOTO,     px:5, extra:120, zig:true,  nome:"uma moto da polícia", sirene:[13.5, 4.5],
+              fim:"A moto veio costurando e te pegou. O baile fica pra próxima." },
+  gabriel:  { img:GABRIEL, h:100,  extra:-60, zig:false, nome:"o Gabriel Vagalume",
+              fim:"O Gabriel Vagalume agachou no meio do caminho e vocês tropeçaram nele. Brilhou, mas deu ruim." },
+};
+
+// escreve o texto na faixa da viatura, condensando se não couber
+function rotulo(r, bx, by, px){
+  ctx.save();
+  ctx.font = "700 " + r.tam + "px ui-monospace, Consolas, monospace";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  const larg = ctx.measureText(r.txt).width;
+  const k = Math.min(1, (r.w * px - 2) / larg);
+  ctx.translate(bx + r.cx * px, by + r.cy * px);
+  ctx.scale(k, 1);
+  ctx.fillStyle = r.cor;
+  ctx.fillText(r.txt, 0, 0);
+  ctx.restore();
+}
+
+/* ====================================================================
+   3. SOM (WebAudio, sem arquivos)
+   ==================================================================== */
+// localStorage pode estar bloqueado (aba anônima, etc.)
+const LS = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v === null ? d : v; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, v); }catch(e){} },
+};
+
+let actx = null;
+let muted = LS.get("jamaica.muted", "0") === "1";
+function audio(){ if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)(); return actx; }
+function beep(freq, dur, type, vol){
+  if (muted) return;
+  try{
+    const a = audio(), o = a.createOscillator(), g = a.createGain();
+    o.type = type || "square"; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol || 0.05, a.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + dur);
+    o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime + dur);
+  }catch(e){}
+}
+function noise(dur, vol){
+  if (muted) return;
+  try{
+    const a = audio(), n = a.sampleRate * dur;
+    const buf = a.createBuffer(1, n, a.sampleRate), d = buf.getChannelData(0);
+    for (let i=0;i<n;i++) d[i] = (Math.random()*2-1) * (1 - i/n);
+    const src = a.createBufferSource(); src.buffer = buf;
+    const g = a.createGain(); g.gain.value = vol || 0.12;
+    src.connect(g).connect(a.destination); src.start();
+  }catch(e){}
+}
+const SFX = {
+  lane:  () => beep(520, .05, "square", .03),
+  hit:   () => { noise(.3,.16); beep(120,.25,"sawtooth",.08); },
+  pick:  () => { beep(660,.07,"square",.05); setTimeout(()=>beep(990,.09,"square",.05),70); },
+  life:  () => { beep(520,.08,"triangle",.07); setTimeout(()=>beep(780,.1,"triangle",.07),80); setTimeout(()=>beep(1040,.14,"triangle",.07),170); },
+  win:   () => [0,120,240,420].forEach((d,i)=>setTimeout(()=>beep([523,659,784,1047][i],.2,"triangle",.07),d)),
+  over:  () => [0,130,260].forEach((d,i)=>setTimeout(()=>beep([330,260,180][i],.26,"sawtooth",.07),d)),
+};
+
+/* ====================================================================
+   4. ESTADO DO JOGO
+   ==================================================================== */
+const ST = { START:"start", PLAY:"play", PAUSE:"pause", END:"end" };
+let state = ST.START;
+let dif = DIF[LS.get("jamaica.dif", "normal")] ? LS.get("jamaica.dif", "normal") : "normal";
+let cfg = DIF[dif];
+
+let game = null;
+function novoJogo(){
+  cfg = DIF[dif];
+  // atalhos de teste: ?meta=300 encurta a travessia, ?escudo=1 ja comeca com a DILJAMAICA
+  const q = new URLSearchParams(location.search);
+  const metaURL = parseInt(q.get("meta"), 10);
+  game = {
+    meta: metaURL > 0 ? metaURL : cfg.meta,
+    t: 0,
+    scroll: 0,
+    dist: 0,            // metros percorridos
+    vidas: cfg.lives,
+    maxVidas: cfg.lives,
+    pontos: 0,
+    bonus: 0,
+    buds: 0,
+    baseados: 0,          // 3 chamam a DILJAMAICA
+    escudo: q.has("escudo") ? 30 : 0,   // segundos de proteção restantes
+    aviso: 0,             // tempo do aviso na tela
+    lane: 1,
+    laneAlvo: 1,
+    y: laneY(1),
+    alvoY: laneY(1),      // pode ficar entre raias quando o dedo arrasta
+    arrastando: false,
+    mult: 1,              // velocidade vinda do arraste lateral
+    inv: 0,             // invencibilidade pós-dano
+    shake: 0,
+    obst: [],
+    itens: [],
+    parts: [],
+    fumacas: [],
+    fumT: 0.6,          // próxima fumacinha
+    spawnT: 0.8,
+    itemT: 3.2,
+    portao: null,       // portão de saída
+    acabou: false,
+    motivo: "",
+    venceu: false,
+  };
+}
+
+/* ====================================================================
+   5. ENTRADA
+   ==================================================================== */
+const keys = Object.create(null);
+addEventListener("keydown", e => {
+  const k = e.key.toLowerCase();
+  if (["arrowup","arrowdown","arrowleft","arrowright"," "].includes(k)) e.preventDefault();
+  if (keys[k]) return;
+  keys[k] = true;
+
+  if (state === ST.PLAY){
+    if (k === "arrowup" || k === "w") mudarRaia(-1);
+    if (k === "arrowdown" || k === "s") mudarRaia(1);
+    if (k === "p" || k === "escape") pausar(true);
+  } else if (state === ST.PAUSE && (k === "p" || k === "escape")){
+    pausar(false);
+  } else if (state === ST.START && (k === "enter" || k === " ")){
+    comecar();
+  } else if (state === ST.END && (k === "enter" || k === " ")){
+    comecar();
+  }
+  if (k === "m"){
+    muted = !muted;
+    LS.set("jamaica.muted", muted ? "1" : "0");
+  }
+});
+addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
+
+function mudarRaia(d){
+  const alvo = Math.max(0, Math.min(LANES-1, game.laneAlvo + d));
+  if (alvo !== game.laneAlvo){
+    game.laneAlvo = alvo;
+    game.alvoY = laneY(alvo);
+    SFX.lane();
+  }
+}
+
+// converte a posição do dedo na tela para a posição no jogo
+function mirar(clientX, clientY){
+  const r = canvas.getBoundingClientRect();
+  if (!r.height) return;
+  game.alvoY = Math.max(ROAD_TOP + 14, Math.min(ROAD_BOT - 14, (clientY - r.top) / r.height * H));
+  // arrastar para os lados acelera ou segura, como um analógico
+  if (game.arrasteX !== undefined){
+    const d = (clientX - game.arrasteX) / r.width;
+    game.mult = Math.max(0.68, Math.min(1.45, 1 + d * 2.4));
+  }
+}
+
+// toque (ou clique): metade de cima sobe, metade de baixo desce.
+// nada aqui depende de media query - tem celular que se declara "pointer:fine"
+// e o jogo ficava sem controle nenhum.
+const touch = document.getElementById("touch");
+let toqueX = 0, toqueY = 0, arrastou = false;
+
+function comecarArraste(x, y, id){
+  if (state !== ST.PLAY) return;
+  game.arrastando = true; game.arrasteX = x;
+  toqueX = x; toqueY = y; arrastou = false;
+  if (id !== undefined && touch.setPointerCapture){ try { touch.setPointerCapture(id); } catch(e){} }
+}
+function moverArraste(x, y){
+  if (state !== ST.PLAY || !game.arrastando) return;
+  if (!arrastou && (Math.abs(x - toqueX) > 8 || Math.abs(y - toqueY) > 8)) arrastou = true;
+  if (arrastou) mirar(x, y);
+}
+function soltarArraste(){
+  if (!game || !game.arrastando) return;
+  game.laneAlvo = game.lane;              // retoma as raias de onde o dedo parou
+  if (!arrastou && state === ST.PLAY){
+    const r = touch.getBoundingClientRect();
+    mudarRaia(toqueY - r.top < r.height/2 ? -1 : 1);   // toque curto ainda troca de raia
+  }
+  game.arrastando = false; game.arrasteX = undefined; game.mult = 1;
+}
+
+if (window.PointerEvent){
+  touch.addEventListener("pointerdown", e => { e.preventDefault(); comecarArraste(e.clientX, e.clientY, e.pointerId); });
+  touch.addEventListener("pointermove", e => { if (game && game.arrastando){ e.preventDefault(); moverArraste(e.clientX, e.clientY); } });
+  touch.addEventListener("pointerup", e => { e.preventDefault(); soltarArraste(); });
+  touch.addEventListener("pointercancel", soltarArraste);
+} else {
+  touch.addEventListener("touchstart", e => { e.preventDefault(); const t = e.touches[0]; comecarArraste(t.clientX, t.clientY); }, { passive:false });
+  touch.addEventListener("touchmove", e => { e.preventDefault(); const t = e.touches[0]; moverArraste(t.clientX, t.clientY); }, { passive:false });
+  touch.addEventListener("touchend", e => { e.preventDefault(); soltarArraste(); }, { passive:false });
+  touch.addEventListener("mousedown", e => comecarArraste(e.clientX, e.clientY));
+  touch.addEventListener("mousemove", e => moverArraste(e.clientX, e.clientY));
+  touch.addEventListener("mouseup", soltarArraste);
+}
+
+/* ====================================================================
+   6. LÓGICA
+   ==================================================================== */
+function velocidade(){
+  const base = cfg.speed + cfg.ramp * Math.min(game.t, 60) / 6;
+  let mult = game.mult;
+  if (keys["arrowright"] || keys["d"]) mult = 1.45;
+  else if (keys["arrowleft"] || keys["a"]) mult = 0.68;
+  return base * mult * ESC;
+}
+
+function spawnOnda(){
+  const safe = (Math.random() * LANES) | 0;              // uma raia sempre livre
+  const tipos = ["policial","viatura"];
+  if (dif !== "facil" && game.dist > 150) tipos.push("moto");
+  if (gabrielPronto) tipos.push("gabriel");
+  for (let i = 0; i < LANES; i++){
+    if (i === safe) continue;
+    if (Math.random() > cfg.dens) continue;
+    const tipo = tipos[(Math.random()*tipos.length)|0];
+    const t = TIPOS[tipo];
+    game.obst.push({
+      tipo, t,
+      x: W + 40 + Math.random()*120,
+      lane: i,
+      y: laneY(i),
+      w: t.img ? Math.round(t.h * t.img.width / t.img.height) : t.sp.w * t.px,
+      h: t.img ? t.h : t.sp.h * t.px,
+      rot: 0,
+      zigT: 0.9 + Math.random()*0.6,
+      fase: Math.random() * 6,
+    });
+  }
+}
+
+function spawnItem(){
+  const lane = (Math.random()*LANES)|0;
+  const pote = ["bud", "bud"];
+  if (game.vidas < game.maxVidas) pote.push("budroxo");
+  if (game.escudo <= 0) pote.push("baseado", "baseado", "baseado");
+  const tipo = pote[(Math.random()*pote.length)|0];
+  const sp = tipo === "budroxo" ? BUD_ROXO : tipo === "baseado" ? BASEADO : BUD;
+  const px = 5;
+  game.itens.push({ tipo, sp, px, x: W + 40, lane, y: laneY(lane), w: sp.w*px, h: sp.h*px, oy: 12, bob: Math.random()*6 });
+}
+
+function soltarFumaca(x, y){
+  game.fumacas.push({
+    x, y,
+    vy: -(38 + Math.random()*26),
+    fase: Math.random()*6,
+    px: Math.random() < 0.35 ? 5 : 4,
+    vida: 1.6 + Math.random()*0.7,
+    t: 0,
+  });
+}
+
+function particulas(x, y, cor, n){
+  for (let i = 0; i < n; i++){
+    game.parts.push({
+      x, y,
+      vx: (Math.random()-0.5) * 260 - 40,
+      vy: (Math.random()-0.5) * 220,
+      vida: 0.4 + Math.random()*0.5,
+      t: 0, cor, s: 1 + Math.random()*3,
+    });
+  }
+}
+
+// caixa de colisão: o sprite é desenhado de (y - h + oy) até (y + oy);
+// fx/fy encolhem a caixa em fração da largura/altura para o toque ser justo.
+function caixa(e, fx, fy){
+  const px = e.w * fx, py = e.h * fy;
+  const oy = e.oy === undefined ? 22 : e.oy;
+  return { x: e.x - e.w/2 + px, y: e.y - e.h + oy + py, w: e.w - px*2, h: e.h - py*2 };
+}
+function bateu(a, b){
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+function levarDano(obj){
+  game.vidas--;
+  game.inv = 1.5;
+  game.shake = 14;
+  SFX.hit();
+  const cor = obj.tipo === "viatura" ? "#f2f4f7" : obj.tipo === "moto" ? "#e23b3b" : obj.tipo === "gabriel" ? "#7dffb0" : "#9fb6d9";
+  particulas(obj.x, obj.y - 20, cor, 26);
+  if (game.vidas <= 0) fim(false, obj.t.fim);
+}
+
+function fim(venceu, motivo){
+  game.acabou = true;
+  game.venceu = venceu;
+  game.motivo = motivo || "";
+  game.shake = 0;
+  state = ST.END;
+  atualizarHUD();
+  venceu ? SFX.win() : SFX.over();
+  telaFim();
+}
+
+function atualizar(dt){
+  const g = game;
+  g.t += dt;
+  const v = velocidade();
+  g.scroll += v * dt;
+  if (!g.portao) g.dist += v * dt / (18 * ESC);
+
+  // sobe e desce até o alvo: a raia escolhida, ou o dedo arrastando
+  g.y += (g.alvoY - g.y) * Math.min(1, dt * (g.arrastando ? 24 : 14));
+  g.lane = Math.max(0, Math.min(LANES-1, Math.round((g.y - ROAD_TOP) / LANE_H - 0.5)));
+
+  if (g.inv > 0) g.inv -= dt;
+  if (g.escudo > 0) g.escudo -= dt;
+  if (g.aviso > 0) g.aviso -= dt;
+  if (g.shake > 0) g.shake = Math.max(0, g.shake - dt * 42);
+
+  // chegou na meta -> entra o portão da saída
+  if (!g.portao && g.dist >= g.meta){
+    g.portao = { x: W + 120 };
+    SFX.pick();
+  }
+
+  // spawns
+  if (!g.portao){
+    g.spawnT -= dt;
+    if (g.spawnT <= 0){
+      spawnOnda();
+      const acel = Math.min(0.34, g.t * 0.004);
+      g.spawnT = Math.max(0.52, cfg.spawn - acel) * (0.85 + Math.random()*0.35);
+    }
+    g.itemT -= dt;
+    if (g.itemT <= 0){ spawnItem(); g.itemT = 3.6 + Math.random()*3.4; }
+  }
+
+  const pBox = { x: PLAYER_X - 40, y: g.y - 52, w: 80, h: 64 };   // os dois lado a lado
+  if (g.escudo > 0) pBox.w += 106;   // a DILJAMAICA segura o que vem pela frente
+
+  // obstáculos
+  for (let i = g.obst.length - 1; i >= 0; i--){
+    const o = g.obst[i];
+    o.x -= (v + o.t.extra * ESC) * dt;
+    o.rot += dt * 4;
+    if (o.t.zig){
+      o.zigT -= dt;
+      if (o.zigT <= 0){
+        o.lane = Math.max(0, Math.min(LANES-1, o.lane + (Math.random()<0.5?-1:1)));
+        o.zigT = 0.75 + Math.random()*0.5;
+      }
+      o.y += (laneY(o.lane) - o.y) * Math.min(1, dt*8);
+    }
+    if (o.x < -90){ g.obst.splice(i,1); g.bonus += 2; continue; }
+    if (bateu(pBox, caixa(o, .18, .16))){
+      if (g.escudo > 0){                       // barrado pela DILJAMAICA
+        g.obst.splice(i,1);
+        g.bonus += 15;
+        particulas(o.x - 10, o.y - 22, "#ffd84d", 18);
+        SFX.lane();
+        continue;
+      }
+      if (g.inv <= 0){
+        g.obst.splice(i,1);
+        levarDano(o);
+        if (g.acabou) return;
+      }
+    }
+  }
+
+  // itens
+  for (let i = g.itens.length - 1; i >= 0; i--){
+    const it = g.itens[i];
+    it.x -= v * dt;
+    it.bob += dt * 5;
+    if (it.x < -60){ g.itens.splice(i,1); continue; }
+    if (bateu(pBox, caixa(it, .12, .14))){
+      g.itens.splice(i,1);
+      if (it.tipo === "budroxo"){
+        game.vidas = Math.min(game.maxVidas, game.vidas + 1);
+        SFX.life(); particulas(it.x, it.y-20, "#c79bf0", 16);
+      } else if (it.tipo === "baseado"){
+        g.baseados++;
+        particulas(it.x, it.y-20, "#ffd84d", 16);
+        if (g.baseados >= 3){
+          g.baseados = 0; g.escudo = 9; g.aviso = 1.8;
+          for (let k = 0; k < 9; k++) soltarFumaca(PLAYER_X + (Math.random()-.5)*110, g.y - 100 - Math.random()*30);
+          SFX.life();
+        } else SFX.pick();
+      } else {
+        game.buds++; game.pontos += 50;
+        SFX.pick(); particulas(it.x, it.y-20, "#9be36a", 14);
+      }
+    }
+  }
+
+  // partículas
+  for (let i = g.parts.length - 1; i >= 0; i--){
+    const p = g.parts[i];
+    p.t += dt;
+    if (p.t >= p.vida){ g.parts.splice(i,1); continue; }
+    p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 220 * dt;
+  }
+
+  // fumacinha subindo da dupla: de vez em quando, e bem mais com a DILJAMAICA por perto
+  g.fumT -= dt;
+  if (g.fumT <= 0){
+    const lado = Math.random() < 0.5 ? -32 : 28;   // sai da cabeça de um ou do outro
+    soltarFumaca(PLAYER_X + lado + (Math.random()-.5)*12, g.y - 104);
+    g.fumT = g.escudo > 0 ? 0.25 + Math.random()*0.2 : 0.7 + Math.random()*0.7;
+  }
+  for (let i = g.fumacas.length - 1; i >= 0; i--){
+    const c = g.fumacas[i];
+    c.t += dt;
+    if (c.t >= c.vida){ g.fumacas.splice(i,1); continue; }
+    c.y += c.vy * dt;
+    c.fase += dt * 4;
+  }
+
+  // portão
+  if (g.portao){
+    g.portao.x -= v * dt;
+    if (g.portao.x <= PLAYER_X){ fim(true); return; }
+  }
+
+  g.pontos = Math.floor(g.dist) + g.buds * 50 + g.bonus;
+  atualizarHUD();
+}
+
+/* ====================================================================
+   7. DESENHO
+   ==================================================================== */
+function nuvem(x, y, e){
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(x, y, 11*e, 0, 7);
+  ctx.arc(x + 13*e, y + 3*e, 8*e, 0, 7);
+  ctx.arc(x - 12*e, y + 4*e, 7*e, 0, 7);
+  ctx.fill();
+}
+
+// bandeirinha da Jamaica: cruz amarela, verde em cima e embaixo, preto nos lados
+function bandeira(x, y, w, h){
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+  ctx.fillStyle = "#1c9e4a"; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = "#141414";
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + w/2, y + h/2); ctx.lineTo(x, y + h); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x + w, y); ctx.lineTo(x + w/2, y + h/2); ctx.lineTo(x + w, y + h); ctx.fill();
+  ctx.strokeStyle = "#f5d327"; ctx.lineWidth = h * 0.22;
+  ctx.beginPath();
+  ctx.moveTo(x, y); ctx.lineTo(x + w, y + h);
+  ctx.moveTo(x + w, y); ctx.lineTo(x, y + h);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// coqueiro meio torto, com cocos, balançando no vento
+function coqueiro(x, base, t){
+  for (let i = 0; i < 7; i++){
+    ctx.fillStyle = i % 2 ? "#8a5a2e" : "#a06c3a";
+    ctx.fillRect(x + i * 3, base - (i + 1) * 13, 10, 14);
+  }
+  const tx = x + 23, ty = base - 92;
+  const vento = Math.sin(t * 1.6) * 0.06;
+  ctx.fillStyle = "#2f9a4a";
+  for (const ang of [-2.7, -2.1, -1.2, -0.4, 0.35]){
+    ctx.save();
+    ctx.translate(tx, ty); ctx.rotate(ang + vento);
+    ctx.beginPath(); ctx.ellipse(24, 0, 26, 6, 0, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  ctx.fillStyle = "#6b4423";
+  ctx.beginPath(); ctx.arc(tx - 4, ty + 6, 5, 0, 7); ctx.arc(tx + 6, ty + 7, 5, 0, 7); ctx.fill();
+}
+
+// paredão de caixas do sound system, batendo no grave
+function soundSystem(x, base, t){
+  const grave = Math.sin(t * 10) > 0.5 ? 2 : 0;
+  for (const [dx, dy] of [[0, 0], [38, 0], [19, -38]]){
+    const bx = x + dx, by = base - 38 + dy;
+    ctx.fillStyle = "#26262a"; ctx.fillRect(bx, by, 36, 38);
+    ctx.fillStyle = "#1c9e4a"; ctx.fillRect(bx, by, 12, 4);
+    ctx.fillStyle = "#f5d327"; ctx.fillRect(bx + 12, by, 12, 4);
+    ctx.fillStyle = "#d8232a"; ctx.fillRect(bx + 24, by, 12, 4);
+    ctx.fillStyle = "#4a4a52";
+    ctx.beginPath(); ctx.arc(bx + 18, by + 22, 11 + grave, 0, 7); ctx.fill();
+    ctx.fillStyle = "#8a8a94";
+    ctx.beginPath(); ctx.arc(bx + 18, by + 22, 4, 0, 7); ctx.fill();
+  }
+}
+
+function drawFundo(){
+  const g = game, s = g ? g.scroll : 0, t = g ? g.t : 0;
+
+  // céu
+  const cg = ctx.createLinearGradient(0, 0, 0, 104);
+  cg.addColorStop(0, "#6fcdf0"); cg.addColorStop(1, "#d6f3ff");
+  ctx.fillStyle = cg;
+  ctx.fillRect(0, 0, W, 104);
+
+  // sol de Kingston
+  const sx = W * 0.8, sy = 40;
+  const gl = ctx.createRadialGradient(sx, sy, 8, sx, sy, 130);
+  gl.addColorStop(0, "#fff8d2"); gl.addColorStop(.4, "#ffe79a66"); gl.addColorStop(1, "#ffe79a00");
+  ctx.fillStyle = gl;
+  ctx.beginPath(); ctx.arc(sx, sy, 130, 0, 7); ctx.fill();
+  ctx.fillStyle = "#ffdd57";
+  ctx.beginPath(); ctx.arc(sx, sy, 24, 0, 7); ctx.fill();
+
+  // nuvens passando devagar
+  const off = (s * 0.08) % 320;
+  for (let x = -320 - off; x < W + 320; x += 320){
+    nuvem(x + 70, 30, 1.1);
+    nuvem(x + 230, 58, .75);
+  }
+
+  // mar do Caribe com as ondinhas brilhando
+  ctx.fillStyle = "#2aa6c8"; ctx.fillRect(0, 100, W, 30);
+  ctx.fillStyle = "#63cbe2"; ctx.fillRect(0, 100, W, 4);
+  const offM = (s * 0.2) % 80;
+  ctx.fillStyle = "#c8f0f7";
+  for (let x = -80 - offM; x < W + 80; x += 80){
+    ctx.fillRect(x + 8, 111, 18, 2);
+    ctx.fillRect(x + 48, 121, 12, 2);
+  }
+
+  // areia da orla
+  ctx.fillStyle = "#f4dba6"; ctx.fillRect(0, 130, W, ROAD_TOP - 130);
+
+  // coqueiros e o sound system montado na areia
+  const off2 = (s * 0.45) % 300;
+  for (let x = -300 - off2; x < W + 300; x += 300){
+    coqueiro(x + 30, ROAD_TOP - 14, t);
+    soundSystem(x + 150, ROAD_TOP - 14, t);
+  }
+
+  // placa do rolê
+  ctx.save();
+  ctx.translate(W/2, 62);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(-150, -24, 300, 48);
+  ctx.strokeStyle = "#1c9e4a"; ctx.lineWidth = 4;
+  ctx.strokeRect(-150, -24, 300, 48);
+  bandeira(-136, -12, 36, 24);
+  ctx.font = "700 21px ui-monospace, Consolas, monospace";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillStyle = "#1c7a3a";
+  ctx.fillText("JAMAICA VERSIONS", 20, 2);
+  ctx.restore();
+
+  // mureta da orla pintada de verde, amarelo e preto
+  const offR = s % 90;
+  for (let x = -90 - offR; x < W + 90; x += 90){
+    ctx.fillStyle = "#1c9e4a"; ctx.fillRect(x, ROAD_TOP - 14, 30, 14);
+    ctx.fillStyle = "#f5d327"; ctx.fillRect(x + 30, ROAD_TOP - 14, 30, 14);
+    ctx.fillStyle = "#141414"; ctx.fillRect(x + 60, ROAD_TOP - 14, 30, 14);
+  }
+
+  // calçadão em faixas claras
+  for (let i = 0; i < LANES; i++){
+    ctx.fillStyle = i % 2 ? "#efe4cc" : "#f8efdc";
+    ctx.fillRect(0, ROAD_TOP + LANE_H * i, W, LANE_H + 1);
+  }
+
+  // manchas de sol atravessando o chão
+  const off3 = s % 460;
+  ctx.fillStyle = "#fff8dc99";
+  for (let x = -460 - off3; x < W + 460; x += 460){
+    ctx.beginPath();
+    ctx.moveTo(x, ROAD_TOP); ctx.lineTo(x + 130, ROAD_TOP);
+    ctx.lineTo(x + 58, ROAD_BOT); ctx.lineTo(x - 72, ROAD_BOT);
+    ctx.closePath(); ctx.fill();
+  }
+
+  // setas no chão
+  const off4 = s % 320;
+  ctx.fillStyle = "#1c9e4a2e";
+  for (let x = -320 - off4; x < W + 320; x += 320){
+    for (const l of [0, 3]){
+      const y = laneY(l);
+      ctx.beginPath();
+      ctx.moveTo(x, y - 11); ctx.lineTo(x + 24, y); ctx.lineTo(x, y + 11);
+      ctx.closePath(); ctx.fill();
+    }
+  }
+
+  // divisórias tracejadas
+  ctx.save();
+  ctx.strokeStyle = "#ffffffdd"; ctx.lineWidth = 4;
+  ctx.setLineDash([52, 38]);
+  ctx.lineDashOffset = -(s % 90);
+  for (let i = 1; i < LANES; i++){
+    const y = ROAD_TOP + LANE_H * i;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+  ctx.restore();
+
+  // canteiros na beirada de baixo em verde, amarelo e vermelho de reggae
+  ctx.fillStyle = "#ecd5b0"; ctx.fillRect(0, ROAD_BOT, W, H - ROAD_BOT);
+  ctx.fillStyle = "#d3b78e"; ctx.fillRect(0, ROAD_BOT, W, 3);
+  const cant = ["#b7e4b9", "#ffe7a0", "#ffc2b5"];
+  const off5 = (s * 1.15) % 150;
+  let n = Math.floor(s * 1.15 / 150);   // número do canteiro no mundo, a cor não pula
+  for (let x = -150 - off5; x < W + 150; x += 150, n++){
+    ctx.fillStyle = cant[n % cant.length];
+    ctx.fillRect(x + 8, ROAD_BOT + 10, 134, H - ROAD_BOT - 18);
+  }
+}
+
+function sombra(x, y, w, a){
+  ctx.save();
+  ctx.globalAlpha = a === undefined ? .16 : a;
+  ctx.fillStyle = "#7a5325";
+  ctx.beginPath(); ctx.ellipse(x, y + 6, w/2, w/6, 0, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawPortao(){
+  const p = game.portao; if (!p) return;
+  const x = p.x;
+  ctx.save();
+  ctx.fillStyle = "#0e1a14";
+  ctx.fillRect(x-6, ROAD_TOP-30, 14, ROAD_BOT-ROAD_TOP+40);
+  ctx.fillStyle = "#4ad98a";
+  ctx.fillRect(x-6, ROAD_TOP-30, 14, 6);
+  ctx.shadowColor = "#4ad98a"; ctx.shadowBlur = 20;
+  ctx.fillStyle = "#4ad98a";
+  ctx.fillRect(x-2, ROAD_TOP-30, 4, ROAD_BOT-ROAD_TOP+40);
+  ctx.font = "600 16px ui-monospace, Consolas, monospace";
+  ctx.textAlign = "center"; ctx.fillStyle = "#9bf0c4";
+  ctx.fillText("B A I L E", x, ROAD_TOP-44);
+  ctx.restore();
+}
+
+function drawJogador(){
+  const g = game;
+  const piscando = g.inv > 0 && Math.floor(g.t * 14) % 2 === 0;
+  const px = 5;
+  const sp = (Math.floor(g.scroll / 26) % 2 === 0) ? PLAYER_A : PLAYER_B;
+  const w = sp.w * px, h = sp.h * px;
+  const x = PLAYER_X - w/2;
+  const y = g.y - h + 22;
+  sombra(PLAYER_X, g.y + 10, 96, .4);
+  if (!piscando) draw(sp, x, y, px);
+
+  plaquinha("ISEO & DODOSOUND", PLAYER_X, y - 24, "#1c7a3a");
+}
+
+// etiqueta com nome (e um segundo verso opcional) por cima do personagem
+function plaquinha(texto, cx, topo, cor, sub){
+  ctx.save();
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.font = "700 12px ui-monospace, Consolas, monospace";
+  let larg = ctx.measureText(texto).width;
+  if (sub){
+    ctx.font = "700 9px ui-monospace, Consolas, monospace";
+    larg = Math.max(larg, ctx.measureText(sub).width);
+  }
+  const tw = larg + 20, th = sub ? 30 : 19;
+  ctx.fillStyle = "#fffaf0ee";
+  ctx.fillRect(cx - tw/2, topo, tw, th);
+  ctx.strokeStyle = cor; ctx.lineWidth = 2;
+  ctx.strokeRect(cx - tw/2 + 1, topo + 1, tw - 2, th - 2);
+  ctx.fillStyle = cor;
+  ctx.font = "700 12px ui-monospace, Consolas, monospace";
+  ctx.fillText(texto, cx, topo + (sub ? 11 : 10));
+  if (sub){
+    ctx.font = "700 9px ui-monospace, Consolas, monospace";
+    ctx.globalAlpha = .75;
+    ctx.fillText(sub, cx, topo + 23);
+  }
+  ctx.restore();
+}
+
+// a DILJAMAICA entra na frente e segura a polícia
+function drawDiljamaica(){
+  const g = game, px = 5;
+  const w = DILJAMAICA.w * px, h = DILJAMAICA.h * px;
+  const cx = PLAYER_X + 104;
+  const bob = Math.sin(g.t * 7) * 3;
+  const y = g.y - h + 22 + bob;
+  const acabando = g.escudo < 2.2 && Math.floor(g.t * 9) % 2 === 0;
+  sombra(cx, g.y + 10, 52, .16);
+  if (acabando) return;
+  ctx.save();
+  ctx.shadowColor = "#ffd84d"; ctx.shadowBlur = 16;
+  draw(DILJAMAICA, cx - w/2, y, px);
+  ctx.restore();
+  plaquinha("DILJAMAICA", cx, y - 46, "#1c9e4a");
+}
+
+function drawCena(){
+  const g = game;
+  ctx.save();
+  if (g && g.shake > 0){
+    ctx.translate((Math.random()-.5)*g.shake, (Math.random()-.5)*g.shake);
+  }
+  drawFundo();
+
+  if (g){
+    // obstáculos
+    for (const o of g.obst){
+      const bx = o.x - o.w/2, by = o.y - o.h + 22;
+      sombra(o.x, o.y + 10, o.w * .8);
+      if (o.t.img){
+        // pulinho agachado, com o brilho verde de vagalume em volta
+        const pulo = Math.abs(Math.sin(g.t * 5 + o.fase)) * 8;
+        ctx.save();
+        ctx.shadowColor = "#7dffb0"; ctx.shadowBlur = 16;
+        ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(o.t.img, bx, by - pulo, o.w, o.h);
+        ctx.restore();
+        plaquinha("GABRIEL VAGALUME", o.x, by - pulo - 26, "#1c7a3a");
+      } else draw(o.t.sp, bx, by, o.t.px);
+      if (o.t.rot) rotulo(o.t.rot, bx, by, o.t.px);
+      // giroflex piscando vermelho e azul
+      if (o.t.sirene){
+        ctx.save();
+        ctx.globalAlpha = .45;
+        ctx.fillStyle = Math.floor(g.t * 6) % 2 ? "#ff3b3b" : "#3b7bff";
+        ctx.beginPath();
+        ctx.arc(bx + o.t.sirene[0] * o.t.px, by + o.t.sirene[1] * o.t.px, 14, 0, 7);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+    // itens (flutuando)
+    for (const it of g.itens){
+      const fy = Math.sin(it.bob) * 5;
+      sombra(it.x, it.y + 10, it.w * .7, .25);
+      ctx.save();
+      ctx.shadowColor = it.tipo === "budroxo" ? "#c79bf0" : it.tipo === "baseado" ? "#ffd27a" : "#9be36a";
+      ctx.shadowBlur = 12;
+      draw(it.sp, it.x - it.w/2, it.y - it.h + 12 + fy, it.px);
+      ctx.restore();
+    }
+    drawPortao();
+    drawJogador();
+    if (g.escudo > 0) drawDiljamaica();
+
+    // aviso de que a DILJAMAICA chegou
+    if (g.aviso > 0){
+      const k = Math.min(1, (1.8 - g.aviso) * 6);
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, g.aviso * 1.4);
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.font = "700 " + (26 + (1 - k) * 14) + "px ui-monospace, Consolas, monospace";
+      ctx.lineWidth = 6; ctx.strokeStyle = "#fffaf0";
+      ctx.strokeText("DILJAMAICA", W/2, 150);
+      ctx.fillStyle = "#1c9e4a";
+      ctx.fillText("DILJAMAICA", W/2, 150);
+      ctx.restore();
+    }
+
+    // fumacinha balançando enquanto sobe e some
+    for (const c of g.fumacas){
+      const a = Math.min(1, c.t * 5, (c.vida - c.t) * 2) * 0.85;
+      const w = FUMACA.w * c.px;
+      draw(FUMACA, c.x + Math.sin(c.fase) * 7 - w/2, c.y, c.px, a);
+    }
+
+    // partículas
+    for (const p of g.parts){
+      ctx.globalAlpha = Math.max(0, 1 - p.t / p.vida);
+      ctx.fillStyle = p.cor;
+      ctx.fillRect(p.x, p.y, p.s, p.s);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // vinheta
+  const vg = ctx.createRadialGradient(W/2, H/2, H*0.5, W/2, H/2, H*1.05);
+  vg.addColorStop(0, "#00000000"); vg.addColorStop(1, "#00000077");
+  ctx.fillStyle = vg; ctx.fillRect(0,0,W,H);
+  ctx.restore();
+}
+
+/* ====================================================================
+   8. HUD E TELAS
+   ==================================================================== */
+const el = id => document.getElementById(id);
+const hearts = el("hearts"), progfill = el("progfill"), progdot = el("progdot"), pts = el("pts");
+const baseadosEl = el("baseados");
+
+function atualizarHUD(){
+  const g = game; if (!g) return;
+  if (hearts.childElementCount !== g.maxVidas){
+    hearts.innerHTML = "";
+    for (let i=0;i<g.maxVidas;i++){
+      hearts.insertAdjacentHTML("beforeend",
+        '<svg class="heart" viewBox="0 0 16 15" fill="currentColor" aria-hidden="true">' +
+        '<path d="M8 14.2 1.5 7.6A4.1 4.1 0 0 1 8 2.9a4.1 4.1 0 0 1 6.5 4.7Z"/></svg>');
+    }
+  }
+  [...hearts.children].forEach((h,i)=> h.classList.toggle("off", i >= g.vidas));
+  [...baseadosEl.children].forEach((e,i)=> e.classList.toggle("on", g.escudo > 0 || i < g.baseados));
+  const p = Math.min(100, g.dist / g.meta * 100);
+  progfill.style.width = p + "%";
+  progdot.style.left = p + "%";
+  pts.textContent = g.pontos;
+}
+
+function mostrar(id){
+  for (const s of document.querySelectorAll(".screen")) s.classList.remove("on");
+  if (id) el(id).classList.add("on");
+}
+
+function best(){ return +LS.get("jamaica.best." + dif, 0) || 0; }
+function setBest(v){ LS.set("jamaica.best." + dif, String(v)); }
+
+function telaInicio(){
+  state = ST.START;
+  mostrar("scr-start");
+  el("best-start").textContent = best() ? "RECORDE EM " + cfg.label + ": " + best() + " PONTOS" : "";
+}
+
+const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
+
+const VITORIAS = [
+  "Chegou no baile com o sound system inteiro e o beck intacto. Solta o grave, Dodo.",
+  "Nenhum enquadro no caminho. A Iseo já tá no microfone e a pista tá lotada.",
+  "Atravessou a orla na paz, só no reggae. Jah abençoe o rolê.",
+];
+
+function telaFim(){
+  const g = game;
+  const recorde = g.pontos > best();
+  if (recorde) setBest(g.pontos);
+  el("end-eyebrow").textContent = g.venceu ? "CHEGOU NO BAILE" : "ENQUADRADO";
+  el("end-title").textContent = "Deu PT";
+  el("end-sub").textContent = (g.venceu
+    ? VITORIAS[(Math.random()*VITORIAS.length)|0]
+    : g.motivo) + (recorde ? " E ainda bateu seu recorde, hein." : "");
+  el("end-pts").textContent = g.pontos;
+  el("end-m").textContent = Math.floor(g.dist);
+  el("end-best").textContent = best();
+  mostrar("scr-end");
+}
+
+function comecar(){
+  novoJogo();
+  atualizarHUD();
+  mostrar(null);
+  document.getElementById("touch").classList.add("on");
+  state = ST.PLAY;
+  try { const a = audio(); if (a.state === "suspended") a.resume(); } catch(e){}
+}
+
+function pausar(p){
+  if (p && state === ST.PLAY){ state = ST.PAUSE; mostrar("scr-pause"); }
+  else if (!p && state === ST.PAUSE){ state = ST.PLAY; mostrar(null); }
+}
+
+// desenha cada sprite da legenda num canvas pequeno
+const MINIS = { policial:POLICIAL, viatura:VIATURA, moto:MOTO, bud:BUD, budroxo:BUD_ROXO, baseado:BASEADO };
+for (const alvo of document.querySelectorAll("[data-sp]")){
+  const sp = MINIS[alvo.dataset.sp];
+  if (!sp) continue;
+  const px = 2;
+  const cv = document.createElement("canvas");
+  cv.width = sp.w * px; cv.height = sp.h * px;
+  const c2 = cv.getContext("2d");
+  c2.imageSmoothingEnabled = false;
+  draw(sp, 0, 0, px, undefined, c2);
+  alvo.appendChild(cv);
+}
+
+// botões
+for (const b of document.querySelectorAll("[data-dif]")){
+  b.addEventListener("click", () => {
+    dif = b.dataset.dif; cfg = DIF[dif];
+    LS.set("jamaica.dif", dif);
+    document.querySelectorAll("[data-dif]").forEach(x => x.classList.toggle("sel", x === b));
+    el("best-start").textContent = best() ? "RECORDE EM " + cfg.label + ": " + best() + " PONTOS" : "";
+  });
+  b.classList.toggle("sel", b.dataset.dif === dif);
+}
+el("btn-start").addEventListener("click", comecar);
+el("btn-again").addEventListener("click", comecar);
+el("btn-menu").addEventListener("click", telaInicio);
+el("btn-resume").addEventListener("click", () => pausar(false));
+
+/* ====================================================================
+   9. LOOP
+   ==================================================================== */
+// celular em pe: o aviso de girar cobre a tela e pausa o jogo,
+// mas da pra dispensar o aviso e jogar em pe mesmo assim.
+function checarRetrato(){
+  const emPe = innerHeight > innerWidth && Math.min(innerWidth, innerHeight) < 900;
+  document.body.classList.toggle("retrato", emPe);
+  if (emPe && !document.body.classList.contains("gira-ok")) pausar(true);
+  fitCanvas();
+}
+addEventListener("resize", checarRetrato);
+document.getElementById("btn-gira").addEventListener("click", () => {
+  document.body.classList.add("gira-ok");
+  fitCanvas();
+});
+checarRetrato();
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) pausar(true);
+  last = performance.now();
+});
+
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  if (state === ST.PLAY) atualizar(dt);
+  else if (game && state === ST.END) { game.t += dt; }
+  drawCena();
+  requestAnimationFrame(loop);
+}
+
+cfg = DIF[dif];
+telaInicio();
+requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>
