@@ -120,6 +120,28 @@
   #scr-start > :not(.burn){position:relative; z-index:1}
   @media (prefers-reduced-motion:reduce){ .burn{animation:none} }
 
+  /* ---------- ranking da galera ---------- */
+  [hidden]{display:none !important}
+  .nome-in{font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+           width:16ch; padding:8px 10px; border:1px solid var(--line); background:#fffaf0; color:var(--txt);
+           -webkit-user-select:text; user-select:text}
+  .nome-in::placeholder{color:#b49a7c; letter-spacing:.1em}
+  .nome-in:focus{outline:2px solid #1c9e4a; outline-offset:1px}
+  .rank{list-style:none; margin:0; padding:0; width:min(440px, 100%); display:flex; flex-direction:column; gap:3px; font-size:11px}
+  .rank li{display:grid; grid-template-columns:3.2ch minmax(0, 1fr) auto 7ch; gap:10px; align-items:baseline;
+           padding:5px 10px; background:#fffaf0; border:1px solid #efe0c4; text-align:left}
+  .rank .pos{color:var(--dim); font-weight:700}
+  .rank li:nth-child(1) .pos{color:#c98a00}
+  .rank li:nth-child(2) .pos{color:#1c9e4a}
+  .rank li:nth-child(3) .pos{color:#d8402a}
+  .rank .n{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; letter-spacing:.1em; color:#2f2217}
+  .rank .p{font-variant-numeric:tabular-nums; color:#2f2217}
+  .rank .m{font-variant-numeric:tabular-nums; color:var(--dim); font-size:9px; text-align:right}
+  .rank li.eu{border-color:#1c9e4a; background:#e3f6e8}
+  .rank li.vazio{display:block; text-align:center; color:var(--dim); background:none; border:0}
+  .rank-msg{font-size:10px; color:var(--dim); letter-spacing:.12em; line-height:1.5}
+  .rank-msg b{color:#1c7a3a}
+
   /* ---------- controles touch ---------- */
   #touch{position:absolute; inset:0; display:none}
   #touch .tz{position:absolute; left:0; right:0; height:50%; display:flex; align-items:center; justify-content:center}
@@ -146,6 +168,8 @@
     button.primary{padding:10px 22px; margin-top:0}
     .score{gap:22px} .score b{font-size:20px}
     .burn{font-size:calc(var(--t) * .7); opacity:.5}
+    .rank{font-size:10px; gap:2px} .rank li{padding:3px 8px}
+    .nome-in{padding:6px 8px}
   }
   /* celular em pé: pede para girar */
   #gira{
@@ -218,12 +242,17 @@
     </div>
     <div class="keys">toque e arraste para mover • ou ↑ ↓ / W S • → corre • ← segura • P pausa • M silencia</div>
     <div class="row">
+      <label class="lbl" for="nome" data-ranking hidden>SEU NOME</label>
+      <input class="nome-in" id="nome" maxlength="16" autocomplete="nickname" spellcheck="false" placeholder="PRO RANKING" data-ranking hidden>
       <span class="lbl">DIFICULDADE</span>
       <button data-dif="facil">FÁCIL</button>
       <button data-dif="normal" class="sel">NORMAL</button>
       <button data-dif="dificil">DIFÍCIL</button>
     </div>
-    <button class="primary" id="btn-start">COMEÇAR O ROLÊ</button>
+    <div class="row">
+      <button class="primary" id="btn-start">COMEÇAR O ROLÊ</button>
+      <button id="btn-rank" data-ranking hidden>VER RANKING</button>
+    </div>
     <div class="foot" id="best-start"></div>
   </div>
 
@@ -237,8 +266,31 @@
       <div>METROS<b id="end-m">0</b></div>
       <div>RECORDE<b id="end-best">0</b></div>
     </div>
-    <button class="primary" id="btn-again">TENTAR DE NOVO</button>
-    <button id="btn-menu">MUDAR DIFICULDADE</button>
+    <div class="rank-msg" id="end-rank-msg" data-ranking hidden></div>
+    <div class="row" id="end-nome" hidden>
+      <input class="nome-in" id="nome2" maxlength="16" autocomplete="nickname" spellcheck="false" placeholder="SEU NOME">
+      <button id="btn-salvar">ENTRAR NO RANKING</button>
+    </div>
+    <ol class="rank" id="end-rank" data-ranking hidden></ol>
+    <div class="row">
+      <button class="primary" id="btn-again">TENTAR DE NOVO</button>
+      <button id="btn-rank2" data-ranking hidden>RANKING</button>
+      <button id="btn-menu">MUDAR DIFICULDADE</button>
+    </div>
+  </div>
+
+  <!-- RANKING -->
+  <div class="screen" id="scr-rank">
+    <div class="eyebrow"><i class="pt">✦</i> ISEO E DODOSOM</div>
+    <h1>Ranking da orla<small>UM LUGAR POR PESSOA, VALE O MELHOR PLACAR</small></h1>
+    <div class="row">
+      <button data-rank="facil">FÁCIL</button>
+      <button data-rank="normal">NORMAL</button>
+      <button data-rank="dificil">DIFÍCIL</button>
+    </div>
+    <div class="rank-msg" id="rank-msg"></div>
+    <ol class="rank" id="rank-lista"></ol>
+    <button class="primary" id="btn-rank-voltar">VOLTAR</button>
   </div>
 
   <!-- PAUSA -->
@@ -630,6 +682,7 @@ function novoJogo(){
    ==================================================================== */
 const keys = Object.create(null);
 addEventListener("keydown", e => {
+  if (e.target instanceof HTMLInputElement) return;   // digitando o nome, não é comando do jogo
   const k = e.key.toLowerCase();
   if (["arrowup","arrowdown","arrowleft","arrowright"," "].includes(k)) e.preventDefault();
   if (keys[k]) return;
@@ -1361,6 +1414,7 @@ function telaFim(){
   el("end-pts").textContent = g.pontos;
   el("end-m").textContent = Math.floor(g.dist);
   el("end-best").textContent = best();
+  rankingNoFim(g);
   mostrar("scr-end");
 }
 
@@ -1376,6 +1430,112 @@ function comecar(){
 function pausar(p){
   if (p && state === ST.PLAY){ state = ST.PAUSE; mostrar("scr-pause"); }
   else if (!p && state === ST.PAUSE){ state = ST.PLAY; mostrar(null); }
+}
+
+/* ====================================================================
+   RANKING DA GALERA: os placares ficam numa planilha do Google (ranking/Code.gs)
+   ==================================================================== */
+// link do app da Web da planilha; enquanto estiver vazio, o jogo roda sem ranking
+const RANKING_URL = "";
+if (RANKING_URL) for (const x of document.querySelectorAll("[data-ranking]")) x.hidden = false;
+
+const limparNome = v => String(v || "").replace(/[<>]/g, "").trim().slice(0, 16).toUpperCase();
+function nomeSalvo(){ return limparNome(LS.get("jamaica.nome", "")); }
+function salvarNome(v){
+  v = limparNome(v);
+  LS.set("jamaica.nome", v);
+  el("nome").value = v; el("nome2").value = v;
+  return v;
+}
+el("nome").value = nomeSalvo();
+
+// fala com a planilha: GET lê o top 10, POST manda um placar e devolve o top 10 atualizado
+async function planilha(params, corpo){
+  const ctl = new AbortController();
+  const espera = setTimeout(() => ctl.abort(), 10000);
+  try {
+    const r = await fetch(RANKING_URL + (params || ""), corpo
+      ? { method: "POST", body: JSON.stringify(corpo), signal: ctl.signal }
+      : { signal: ctl.signal });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.erro || "ranking");
+    return j.top || [];
+  } finally { clearTimeout(espera); }
+}
+
+function desenharRanking(lista, top, eu){
+  lista.textContent = "";
+  if (!top.length){
+    const li = document.createElement("li");
+    li.className = "vazio";
+    li.textContent = "Ninguém no ranking ainda. Bora ser o primeiro?";
+    lista.appendChild(li);
+    return;
+  }
+  top.forEach((r, i) => {
+    const li = document.createElement("li");
+    if (eu && r.nome === eu) li.className = "eu";
+    for (const [cls, txt] of [["pos", (i + 1) + "º"], ["n", r.nome], ["p", r.pontos + " pts"], ["m", r.metros + " m"]]){
+      const s = document.createElement("span");
+      s.className = cls; s.textContent = txt;
+      li.appendChild(s);
+    }
+    lista.appendChild(li);
+  });
+}
+
+// mensagem com um trecho em destaque, sem montar HTML com o nome de ninguém
+function avisar(alvo, antes, forte, depois){
+  alvo.textContent = antes || "";
+  if (forte){ const b = document.createElement("b"); b.textContent = forte; alvo.appendChild(b); }
+  if (depois) alvo.appendChild(document.createTextNode(depois));
+}
+
+let placarSemNome = null;   // partida que acabou sem nome, esperando o nome pra entrar no ranking
+function rankingNoFim(g){
+  if (!RANKING_URL) return;
+  const placar = { nome: nomeSalvo(), pontos: g.pontos, metros: Math.floor(g.dist), dif, venceu: g.venceu };
+  el("end-rank").textContent = "";
+  el("end-nome").hidden = !!placar.nome;
+  if (!placar.nome){
+    placarSemNome = placar;
+    avisar(el("end-rank-msg"), "Coloca teu nome pra esse placar entrar no ranking.");
+    return;
+  }
+  enviarPlacar(placar);
+}
+
+async function enviarPlacar(placar){
+  placarSemNome = null;
+  const msg = el("end-rank-msg");
+  avisar(msg, "Mandando pro ranking…");
+  try {
+    const top = await planilha("", placar);
+    const pos = top.findIndex(r => r.nome === placar.nome);
+    if (pos >= 0) avisar(msg, "Você tá em ", (pos + 1) + "º", " no ranking do " + DIF[placar.dif].label + ".");
+    else avisar(msg, "Ainda fora do top 10 do " + DIF[placar.dif].label + ". Bora de novo!");
+    desenharRanking(el("end-rank"), top.slice(0, 3), placar.nome);
+  } catch (e){
+    avisar(msg, "Não deu pra falar com o ranking agora. Esse placar não foi salvo.");
+  }
+}
+
+let rankDif = "normal", rankVolta = "scr-start";
+async function abrirRanking(d, volta){
+  rankDif = d; rankVolta = volta;
+  mostrar("scr-rank");
+  document.querySelectorAll("[data-rank]").forEach(b => b.classList.toggle("sel", b.dataset.rank === d));
+  const lista = el("rank-lista"), msg = el("rank-msg");
+  lista.textContent = "";
+  avisar(msg, "Carregando o ranking do " + DIF[d].label + "…");
+  try {
+    const top = await planilha("?dif=" + d);
+    if (rankDif !== d) return;            // trocou de aba enquanto carregava
+    avisar(msg, "");
+    desenharRanking(lista, top, nomeSalvo());
+  } catch (e){
+    if (rankDif === d) avisar(msg, "Não deu pra carregar o ranking agora. Tenta de novo daqui a pouco.");
+  }
 }
 
 // desenha cada sprite da legenda num canvas pequeno
@@ -1402,10 +1562,25 @@ for (const b of document.querySelectorAll("[data-dif]")){
   });
   b.classList.toggle("sel", b.dataset.dif === dif);
 }
-el("btn-start").addEventListener("click", comecar);
+el("btn-start").addEventListener("click", () => { salvarNome(el("nome").value); comecar(); });
 el("btn-again").addEventListener("click", comecar);
 el("btn-menu").addEventListener("click", telaInicio);
 el("btn-resume").addEventListener("click", () => pausar(false));
+
+// ranking: nome, telas e abas
+el("nome").addEventListener("change", e => salvarNome(e.target.value));
+el("nome").addEventListener("keydown", e => { if (e.key === "Enter") e.target.blur(); });
+el("nome2").addEventListener("keydown", e => { if (e.key === "Enter") el("btn-salvar").click(); });
+el("btn-salvar").addEventListener("click", () => {
+  const v = salvarNome(el("nome2").value);
+  if (!v){ el("nome2").focus(); return; }
+  el("end-nome").hidden = true;
+  if (placarSemNome){ placarSemNome.nome = v; enviarPlacar(placarSemNome); }
+});
+el("btn-rank").addEventListener("click", () => { salvarNome(el("nome").value); abrirRanking(dif, "scr-start"); });
+el("btn-rank2").addEventListener("click", () => abrirRanking(dif, "scr-end"));
+el("btn-rank-voltar").addEventListener("click", () => mostrar(rankVolta));
+for (const b of document.querySelectorAll("[data-rank]")) b.addEventListener("click", () => abrirRanking(b.dataset.rank, rankVolta));
 
 /* ====================================================================
    9. LOOP

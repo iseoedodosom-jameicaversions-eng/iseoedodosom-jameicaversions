@@ -31,6 +31,18 @@ python -m http.server 8131
 - Atalhos de teste na URL: `?meta=300` encurta a travessia e `?escudo=1` já
   começa com a DILJAMAICA em campo.
 
+## Ranking da galera
+
+Cada um digita o nome na tela inicial (o celular lembra). No fim da partida o
+placar vai pro ranking e a tela final mostra o top 3 e a sua posição; o botão
+RANKING abre o top 10 de cada dificuldade, com um lugar por pessoa.
+
+Os placares ficam numa planilha do Google: o código está em `ranking/Code.gs`,
+colado no Apps Script da planilha e publicado como app da Web. O link do app
+(termina em `/exec`) vai em `RANKING_URL`, no `index.html`. Com `RANKING_URL`
+vazio, o jogo roda sem ranking. Pra apagar uma trapaça, é só apagar a linha na
+aba `placares` da planilha.
+
 ## Publicar
 
 Fica no GitHub Pages em
