@@ -43,6 +43,12 @@ colado no Apps Script da planilha e publicado como app da Web. O link do app
 vazio, o jogo roda sem ranking. Pra apagar uma trapaça, é só apagar a linha na
 aba `placares` da planilha.
 
+A mesma planilha guarda o ranking do Vai dá PT, numa aba separada. Cada jogo
+manda a sua chave (`RANKING_CHAVE`) em todo pedido e a planilha só mostra e
+grava o ranking do jogo dono da chave, então um jogo não vê o ranking do outro.
+No `ranking/Code.gs` daqui vão só marcadores no lugar das chaves; as de verdade
+ficam no Apps Script e cada uma no `index.html` do seu jogo.
+
 ## Publicar
 
 Fica no GitHub Pages em
