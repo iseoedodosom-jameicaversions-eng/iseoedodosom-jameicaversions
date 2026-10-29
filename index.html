@@ -1204,12 +1204,22 @@ function drawCena(){
       sombra(o.x, o.y + 10, o.w * .8);
       let topo = by;
       if (o.t.img){
-        // pulinho agachado, com o brilho verde de vagalume em volta
+        // pulinho agachado, dentro de uma aura verde de vagalume que pulsa
         topo -= Math.abs(Math.sin(g.t * 5 + o.fase)) * 8;
+        const pulsa = 0.5 + Math.sin(g.t * 4 + o.fase) * 0.5;
+        const ax = o.x, ay = topo + o.h * 0.55;
         ctx.save();
-        ctx.shadowColor = "#7dffb0"; ctx.shadowBlur = 16;
+        ctx.globalAlpha = 0.45 + pulsa * 0.35;
+        const aura = ctx.createRadialGradient(ax, ay, 4, ax, ay, o.h * 0.85);
+        aura.addColorStop(0, "#7dffb0"); aura.addColorStop(0.55, "#4dff9a66"); aura.addColorStop(1, "#4dff9a00");
+        ctx.fillStyle = aura;
+        ctx.beginPath(); ctx.ellipse(ax, ay, o.w * 1.05, o.h * 0.8, 0, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.shadowColor = "#4dff9a"; ctx.shadowBlur = 14 + pulsa * 14;
         ctx.imageSmoothingEnabled = true;
         ctx.drawImage(o.t.img, bx, topo, o.w, o.h);
+        ctx.drawImage(o.t.img, bx, topo, o.w, o.h);   // de novo, pra o brilho da borda ficar forte
         ctx.restore();
       } else draw(o.t.sp, bx, by, o.t.px);
       // nome de quem é amigo (e mesmo assim atrapalha)
