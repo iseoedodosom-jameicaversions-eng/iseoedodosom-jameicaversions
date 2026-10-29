@@ -213,8 +213,8 @@
 
   <!-- FIM -->
   <div class="screen" id="scr-end">
-    <div class="eyebrow" id="end-eyebrow">FIM DE JOGO</div>
-    <h1 id="end-title">Deu PT</h1>
+    <div class="eyebrow"><i class="pt">✦</i> ISEO &amp; DODOSOUND</div>
+    <h1 id="end-title">Enquadrado</h1>
     <p class="lead" id="end-sub"></p>
     <div class="score">
       <div>PONTOS<b id="end-pts">0</b></div>
@@ -1328,8 +1328,7 @@ function telaFim(){
   const g = game;
   const recorde = g.pontos > best();
   if (recorde) setBest(g.pontos);
-  el("end-eyebrow").textContent = g.venceu ? "CHEGOU NO BAILE" : "ENQUADRADO";
-  el("end-title").textContent = "Deu PT";
+  el("end-title").textContent = g.venceu ? "Chegou no baile" : "Enquadrado";
   el("end-sub").textContent = (g.venceu
     ? VITORIAS[(Math.random()*VITORIAS.length)|0]
     : g.motivo) + (recorde ? " E ainda bateu seu recorde, hein." : "");
