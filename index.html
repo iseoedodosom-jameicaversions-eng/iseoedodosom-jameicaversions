@@ -1437,6 +1437,9 @@ function pausar(p){
    ==================================================================== */
 // link do app da Web da planilha; enquanto estiver vazio, o jogo roda sem ranking
 const RANKING_URL = "https://script.google.com/macros/s/AKfycbwmY7MXrIh_ujIS6jCfEfB7TLVEIVDZ8ilLzR7FwkJqF5i2_Jv-Wk0SN0kXF7PKxsfo/exec";
+// chave deste jogo na planilha: sem ela não dá pra ler nem gravar este ranking
+// (e a do outro jogo não está aqui, então daqui não dá pra ver o ranking de lá)
+const RANKING_CHAVE = "jv_ClaLQ8UprCoTXa6y";
 if (RANKING_URL) for (const x of document.querySelectorAll("[data-ranking]")) x.hidden = false;
 
 const limparNome = v => String(v || "").replace(/[<>]/g, "").trim().slice(0, 16).toUpperCase();
@@ -1450,12 +1453,13 @@ function salvarNome(v){
 el("nome").value = nomeSalvo();
 
 // fala com a planilha: GET lê o top 10, POST manda um placar e devolve o top 10 atualizado
-async function planilha(params, corpo){
+async function planilha(d, corpo){
   const ctl = new AbortController();
   const espera = setTimeout(() => ctl.abort(), 10000);
   try {
-    const r = await fetch(RANKING_URL + (params || ""), corpo
-      ? { method: "POST", body: JSON.stringify(corpo), signal: ctl.signal }
+    const url = RANKING_URL + "?chave=" + encodeURIComponent(RANKING_CHAVE) + "&dif=" + d;
+    const r = await fetch(url, corpo
+      ? { method: "POST", body: JSON.stringify(Object.assign({ chave: RANKING_CHAVE }, corpo)), signal: ctl.signal }
       : { signal: ctl.signal });
     const j = await r.json();
     if (!j.ok) throw new Error(j.erro || "ranking");
@@ -1510,7 +1514,7 @@ async function enviarPlacar(placar){
   const msg = el("end-rank-msg");
   avisar(msg, "Mandando pro ranking…");
   try {
-    const top = await planilha("", placar);
+    const top = await planilha(placar.dif, placar);
     const pos = top.findIndex(r => r.nome === placar.nome);
     if (pos >= 0) avisar(msg, "Você tá em ", (pos + 1) + "º", " no ranking do " + DIF[placar.dif].label + ".");
     else avisar(msg, "Ainda fora do top 10 do " + DIF[placar.dif].label + ". Bora de novo!");
@@ -1529,7 +1533,7 @@ async function abrirRanking(d, volta){
   lista.textContent = "";
   avisar(msg, "Carregando o ranking do " + DIF[d].label + "…");
   try {
-    const top = await planilha("?dif=" + d);
+    const top = await planilha(d);
     if (rankDif !== d) return;            // trocou de aba enquanto carregava
     avisar(msg, "");
     desenharRanking(lista, top, nomeSalvo());
