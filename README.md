@@ -1,6 +1,6 @@
 # Jamaica Versions
 
-Jogo de travessia da Iseo e do Dodosound, feito em cima do [Vai dá PT](https://vaidar-pt-eng.github.io/vaidar-pt/):
+Jogo de travessia da Iseo e do Dodosom, feito em cima do [Vai dá PT](https://vaidar-pt-eng.github.io/vaidar-pt/):
 a dupla atravessa a orla com o sound system desviando de policial, viatura e
 moto da polícia (e do Gabriel Vagalume). Junte 3 baseados e a DILJAMAICA entra
 na frente segurando a polícia.
