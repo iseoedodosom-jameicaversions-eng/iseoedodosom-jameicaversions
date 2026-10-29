@@ -1436,7 +1436,7 @@ function pausar(p){
    RANKING DA GALERA: os placares ficam numa planilha do Google (ranking/Code.gs)
    ==================================================================== */
 // link do app da Web da planilha; enquanto estiver vazio, o jogo roda sem ranking
-const RANKING_URL = "";
+const RANKING_URL = "https://script.google.com/macros/s/AKfycbwmY7MXrIh_ujIS6jCfEfB7TLVEIVDZ8ilLzR7FwkJqF5i2_Jv-Wk0SN0kXF7PKxsfo/exec";
 if (RANKING_URL) for (const x of document.querySelectorAll("[data-ranking]")) x.hidden = false;
 
 const limparNome = v => String(v || "").replace(/[<>]/g, "").trim().slice(0, 16).toUpperCase();

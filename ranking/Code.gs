@@ -4,13 +4,16 @@
 // e publique como app da Web. O jogo manda cada placar pra cá e lê o top 10 daqui.
 // Os placares ficam na aba "placares": pra apagar uma trapaça, é só apagar a linha.
 
+// id da planilha (o trecho entre /d/ e /edit no link dela); só é usado quando o
+// projeto não está preso à planilha pelo menu Extensões
+const PLANILHA = "148l_ppWTGH8GH2izXzPZdLH4I2pO2ZOPoWa-vYt-7So";
 const ABA = "placares";
 const DIFS = ["facil", "normal", "dificil"];
 const MAX_PONTOS = 20000;   // bem acima do que dá pra fazer jogando de verdade
 const MAX_METROS = 5000;
 
 function aba_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById(PLANILHA);
   let sh = ss.getSheetByName(ABA);
   if (!sh) {
     sh = ss.insertSheet(ABA);
