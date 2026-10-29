@@ -188,6 +188,8 @@
         <span class="it"><i data-sp="policial"></i>policial</span>
         <span class="it"><i data-sp="viatura"></i>viatura</span>
         <span class="it"><i data-sp="moto"></i>moto da polícia</span>
+        <span class="it"><i data-sp="tadeu"></i>Tadeu de Corsa</span>
+        <span class="it"><i data-sp="kaue"></i>Kaue de Logan</span>
         <span class="it"><i><img src="gabriel.png" alt="" height="26" onerror="this.closest('.it').remove()"></i>Gabriel Vagalume</span>
         <span class="pts mau">cada um tira 1 vida</span>
       </div>
@@ -392,6 +394,34 @@ const MOTO = sprite([
   ".kkk.......kkk..",
 ], { k:"#14161c", v:"#3a4a5a", s:"#d9a37f", u:"#3d5a80", r:"#e23b3b", b:"#2b5fd9", o:"#0d0e12", w:"#f2f4f7" });
 
+/* o Corsa verde rebaixado do Tadeu, de roda preta */
+const CORSA = sprite([
+  "........oooooooooo....",
+  ".......owhhwowwwwwo...",
+  "......owwsswowwwwwwo..",
+  ".oooogggggggggggggggo.",
+  "oyggggggggggggggggggro",
+  "oGGGGGGGGGGGGGGGGGGGGo",
+  "oddkkkddddddddddkkkddo",
+  ".odkkkkooooooookkkkdo.",
+  "...kkkk........kkkk...",
+  "....kk..........kk....",
+], { o:"#0d0e12", w:"#9fc4d6", h:"#2a1d14", s:"#e0b08a", g:"#62b26e", G:"#3f8a4c", y:"#fff3b0", r:"#d8402a", d:"#2a2a2e", k:"#1a1b20" });
+
+/* o Logan prata do Kaue, sedã da Renault */
+const LOGAN = sprite([
+  ".......ooooooooo........",
+  "......owhhwowwwwo.......",
+  ".....owwsswowwwwwo......",
+  ".oooopppppppppppppoooooo",
+  "oyppppppppppppppppppppro",
+  "oPPPPPPPPPPPPPPPPPPPPPPo",
+  "oddkkkddddddddddddkkkddo",
+  ".odkkkkooooooooookkkkdo.",
+  "...kkkk..........kkkk...",
+  "....kk............kk....",
+], { o:"#0d0e12", w:"#9fc4d6", h:"#1a1410", s:"#d9a37f", p:"#c5cad1", P:"#9aa1ab", y:"#fff3b0", r:"#d8402a", d:"#2a2a2e", k:"#1a1b20" });
+
 /* bud: o verdinho vale ponto, o roxo devolve uma vida */
 const BUD_ROWS = [
   "....gg....",
@@ -465,7 +495,12 @@ const TIPOS = {
               rot:{ txt:"POLÍCIA", cx:11, cy:7.5, w:16, tam:13, cor:"#14284f" } },
   moto:     { sp:MOTO,     px:5, extra:120, zig:true,  nome:"uma moto da polícia", sirene:[13.5, 4.5],
               fim:"A moto veio costurando e te pegou. O baile fica pra próxima." },
-  gabriel:  { img:GABRIEL, h:100,  extra:-60, zig:false, nome:"o Gabriel Vagalume",
+  tadeu:    { sp:CORSA,    px:5, extra: 70, zig:false, nome:"o Tadeu", placa:"TADEU",
+              fim:"O Tadeu passou de Corsa rebaixado e não freou. Pelo menos o som do carro tava bom." },
+  kaue:     { sp:LOGAN,    px:5, extra: 25, zig:false, nome:"o Kaue", placa:"KAUE",
+              fim:"O Kaue veio de Logan e fechou a passagem. Pelo menos no porta-malas cabe o sound system.",
+              rot:{ txt:"LOGAN", cx:12, cy:4.6, w:9, tam:10, cor:"#4a505a" } },
+  gabriel:  { img:GABRIEL, h:100,  extra:-60, zig:false, nome:"o Gabriel Vagalume", placa:"GABRIEL VAGALUME",
               fim:"O Gabriel Vagalume agachou no meio do caminho e vocês tropeçaram nele. Brilhou, mas deu ruim." },
 };
 
@@ -677,7 +712,7 @@ function velocidade(){
 
 function spawnOnda(){
   const safe = (Math.random() * LANES) | 0;              // uma raia sempre livre
-  const tipos = ["policial","viatura"];
+  const tipos = ["policial","viatura","tadeu","kaue"];
   if (dif !== "facil" && game.dist > 150) tipos.push("moto");
   if (gabrielPronto) tipos.push("gabriel");
   for (let i = 0; i < LANES; i++){
@@ -749,7 +784,7 @@ function levarDano(obj){
   game.inv = 1.5;
   game.shake = 14;
   SFX.hit();
-  const cor = obj.tipo === "viatura" ? "#f2f4f7" : obj.tipo === "moto" ? "#e23b3b" : obj.tipo === "gabriel" ? "#7dffb0" : "#9fb6d9";
+  const cor = { viatura:"#f2f4f7", moto:"#e23b3b", gabriel:"#7dffb0", tadeu:"#62b26e", kaue:"#c5cad1" }[obj.tipo] || "#9fb6d9";
   particulas(obj.x, obj.y - 20, cor, 26);
   if (game.vidas <= 0) fim(false, obj.t.fim);
 }
@@ -1167,16 +1202,18 @@ function drawCena(){
     for (const o of g.obst){
       const bx = o.x - o.w/2, by = o.y - o.h + 22;
       sombra(o.x, o.y + 10, o.w * .8);
+      let topo = by;
       if (o.t.img){
         // pulinho agachado, com o brilho verde de vagalume em volta
-        const pulo = Math.abs(Math.sin(g.t * 5 + o.fase)) * 8;
+        topo -= Math.abs(Math.sin(g.t * 5 + o.fase)) * 8;
         ctx.save();
         ctx.shadowColor = "#7dffb0"; ctx.shadowBlur = 16;
         ctx.imageSmoothingEnabled = true;
-        ctx.drawImage(o.t.img, bx, by - pulo, o.w, o.h);
+        ctx.drawImage(o.t.img, bx, topo, o.w, o.h);
         ctx.restore();
-        plaquinha("GABRIEL VAGALUME", o.x, by - pulo - 26, "#1c7a3a");
       } else draw(o.t.sp, bx, by, o.t.px);
+      // nome de quem é amigo (e mesmo assim atrapalha)
+      if (o.t.placa) plaquinha(o.t.placa, o.x, topo - 26, "#1c7a3a");
       if (o.t.rot) rotulo(o.t.rot, bx, by, o.t.px);
       // giroflex piscando vermelho e azul
       if (o.t.sirene){
@@ -1317,7 +1354,7 @@ function pausar(p){
 }
 
 // desenha cada sprite da legenda num canvas pequeno
-const MINIS = { policial:POLICIAL, viatura:VIATURA, moto:MOTO, bud:BUD, budroxo:BUD_ROXO, baseado:BASEADO };
+const MINIS = { policial:POLICIAL, viatura:VIATURA, moto:MOTO, tadeu:CORSA, kaue:LOGAN, bud:BUD, budroxo:BUD_ROXO, baseado:BASEADO };
 for (const alvo of document.querySelectorAll("[data-sp]")){
   const sp = MINIS[alvo.dataset.sp];
   if (!sp) continue;
