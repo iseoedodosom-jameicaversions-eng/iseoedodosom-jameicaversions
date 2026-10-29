@@ -1,8 +1,8 @@
 # Jamaica Versions
 
 Jogo de travessia da Iseo e do Dodosom, feito em cima do [Vai dá PT](https://vaidar-pt-eng.github.io/vaidar-pt/):
-a dupla atravessa a orla com o sound system desviando de policial, viatura e
-moto da polícia (e do Gabriel Vagalume). Junte 3 baseados e a DILJAMAICA entra
+a dupla atravessa a orla com o sound system desviando do coxa, da ROTA e dos
+ROCAM 244 (e do Tadeu, do Kaue e do Gabriel Vagalume). Junte 3 baseados e a DILJAMAICA entra
 na frente segurando a polícia.
 
 ## Arquivos
@@ -21,9 +21,10 @@ python -m http.server 8131
 
 ## Como funciona
 
-- **Obstáculos:** policial (vem a pé, mais devagar), viatura (segue o chão) e
-  moto da polícia (mais rápida e muda de raia sozinha, a partir de 150 m no
-  normal e difícil). O Gabriel Vagalume vem agachadinho, dando pulinhos.
+- **Obstáculos:** o coxa (policial a pé, mais devagar), a ROTA (viatura, segue
+  o chão) e os ROCAM 244 (moto, mais rápida e muda de raia sozinha, a partir de
+  150 m no normal e difícil). O Tadeu vem de Corsa verde, o Kaue de Logan e o
+  Gabriel Vagalume agachadinho, dando pulinhos com a aura verde.
 - **Itens:** bud vale 50 pontos, bud roxo devolve uma vida.
 - **Baseados:** cada 3 chamam a DILJAMAICA por 9 segundos; enquanto ela estiver
   na frente, toda polícia que encostar é barrada e ainda vale 15 pontos.
